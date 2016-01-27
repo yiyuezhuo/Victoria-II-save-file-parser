@@ -17,8 +17,6 @@ f.close()
 sl=doc.split("\n")
 
 def scan(sl,start_index,match,start="{",end="}"):
-    '''该函数从sl的start_index段开始往下扫描，碰到start符号增加一级，增加的一级不分析match只匹配end
-    碰到end减少一级。只匹配当前级的match。若在当前级遭遇end停止扫描'''
     level=0
     result=[]
     i=start_index
@@ -62,7 +60,6 @@ def pop_pure(pop):
     return pop
     
 def pop_parse(sl,index):
-    #这个index是pop_select返回的那种
     pop={}
     pop['type']=sl[index].split('=')[0].strip()
     nation,religion=sl[index+4].split('=')
@@ -83,13 +80,6 @@ def pop_parse(sl,index):
             key,value=line.split('=')
             pop[key.strip()]=value
         i+=1
-    #pop['bank']=pop.get('bank',0.0)
-    '''查了一下,注释掉，莫名其妙凡是life_needs出现的场合似乎都不正常
-    #纯化默认插值，不保证正确性，使用这里的属性应当谨慎
-    pop['bank']=pop.get('bank',0.0)
-    pop['luxury_needs']=pop.get('luxury_needs',1.0)
-    pop['everyday_needs']=pop.get('everyday_needs',1.0)
-    '''
     return pop
     
 def pop_l_parse(sl):
@@ -97,29 +87,21 @@ def pop_l_parse(sl):
     return [pop_parse(sl,index) for index in index_l]
     
 def groupby(l,key,f=None,ff=None):
-    #这个相当于先用key分类,再用f做map，再用ff做reduce
     if f==None:
         f=lambda x:x
 
     dd=defaultdict(list)
     for obj in l:
         dd[obj[key]].append(f(obj))
-    if ff!=None:#默认字典的len貌似是不和直觉的
+    if ff!=None:
         dd={key:ff(value) for key,value in dd.items()}
     return dd
     
     
 def compare(pl,key,x,y,f=None,x_weight=False,y_weight=False):
-    #通过key分类，然后分别取x,y所对应段通过f二元计算得到字典
-    #注意默认是直接求和不加权的，因为一般用的money和size是总量属性
-    #但是literacy确是应该加权的属性，简直了,请用x_weight加权
     if f==None:
         f=lambda x:x
-    
-    '''
-    xd=groupby(pl,key,lambda pop:float(pop[x]),ff=lambda pop_l:sum(pop_l))
-    yd=groupby(pl,key,lambda pop:float(pop[y]),ff=lambda pop_l:sum(pop_l))
-    '''
+		
     if x_weight:
         xd=groupby(pl,key,lambda pop:float(pop[x])*float(pop['size']),ff=lambda pop_l:sum(pop_l))
     else:
@@ -132,28 +114,20 @@ def compare(pl,key,x,y,f=None,x_weight=False,y_weight=False):
     return {key:f(xd[key],yd[key]) for key in xd.keys()}
     
 def groupby_2(l,key1,key2,f=None,ff=None):
-    #这个相当于先用key分类,再用f做map，再用ff做reduce
     if f==None:
         f=lambda x:x
 
     dd=defaultdict(list)
     for obj in l:
         dd[(obj[key1],obj[key2])].append(f(obj))
-    if ff!=None:#默认字典的len貌似是不和直觉的
+    if ff!=None:
         dd={key:ff(value) for key,value in dd.items()}
     return dd
     
 def compare_2(pl,key1,key2,x,y,f=None,x_weight=False,y_weight=False):
-    #通过key分类，然后分别取x,y所对应段通过f二元计算得到字典
-    #注意默认是直接求和不加权的，因为一般用的money和size是总量属性
-    #但是literacy确是应该加权的属性，简直了,请用x_weight加权
     if f==None:
         f=lambda x:x
     
-    '''
-    xd=groupby(pl,key,lambda pop:float(pop[x]),ff=lambda pop_l:sum(pop_l))
-    yd=groupby(pl,key,lambda pop:float(pop[y]),ff=lambda pop_l:sum(pop_l))
-    '''
     if x_weight:
         xd=groupby_2(pl,key1,key2,lambda pop:float(pop[x])*float(pop['size']),ff=lambda pop_l:sum(pop_l))
     else:

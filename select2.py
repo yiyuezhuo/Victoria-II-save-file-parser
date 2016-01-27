@@ -4,6 +4,7 @@ Created on Wed Jan 27 20:40:05 2016
 
 @author: yiyuezhuo
 """
+from collections import defaultdict
 
 
 def take(sl,index):
@@ -103,6 +104,60 @@ def scan(sl):
                 raise KeyError
             pro['state']=sta['id']
     return rd
+
+
+
+def groupby(l,key,f=None,ff=None):
+    if f==None:
+        f=lambda x:x
+
+    dd=defaultdict(list)
+    for obj in l:
+        dd[obj[key]].append(f(obj))
+    if ff!=None:
+        dd={key:ff(value) for key,value in dd.items()}
+    return dd
+    
+def compare(pl,key,x,y,f=None,x_weight=False,y_weight=False):
+    if f==None:
+        f=lambda x:x
+		
+    if x_weight:
+        xd=groupby(pl,key,lambda pop:float(pop[x])*float(pop['size']),ff=lambda pop_l:sum(pop_l))
+    else:
+        xd=groupby(pl,key,lambda pop:float(pop[x]),ff=lambda pop_l:sum(pop_l))
+    if y_weight:
+        xd=groupby(pl,key,lambda pop:float(pop[x]),ff=lambda pop_l:sum(pop_l))
+    else:
+        yd=groupby(pl,key,lambda pop:float(pop[y]),ff=lambda pop_l:sum(pop_l))
+    
+    return {key:f(xd[key],yd[key]) for key in xd.keys()}
+    
+def groupby_2(l,key1,key2,f=None,ff=None):
+    if f==None:
+        f=lambda x:x
+
+    dd=defaultdict(list)
+    for obj in l:
+        dd[(obj[key1],obj[key2])].append(f(obj))
+    if ff!=None:
+        dd={key:ff(value) for key,value in dd.items()}
+    return dd
+    
+def compare_2(pl,key1,key2,x,y,f=None,x_weight=False,y_weight=False):
+    if f==None:
+        f=lambda x:x
+    
+    if x_weight:
+        xd=groupby_2(pl,key1,key2,lambda pop:float(pop[x])*float(pop['size']),ff=lambda pop_l:sum(pop_l))
+    else:
+        xd=groupby_2(pl,key1,key2,lambda pop:float(pop[x]),ff=lambda pop_l:sum(pop_l))
+    if y_weight:
+        xd=groupby_2(pl,key1,key2,lambda pop:float(pop[x]),ff=lambda pop_l:sum(pop_l))
+    else:
+        yd=groupby_2(pl,key1,key2,lambda pop:float(pop[y]),ff=lambda pop_l:sum(pop_l))
+    
+    return {key:f(xd[key],yd[key]) for key in xd.keys()}
 
 
 def parse(fname):

@@ -1,165 +1,171 @@
-区域数据（区域数据里有区域内的pop数据）居然是以1={...} 2={... } 这样的形式直接记录在顶层的，还以为要放到zone{}块里什么的，P社就是任性。
+# Victoria II game save file parser 
 
-顺便记录一下存档结构，既然区域数组放到顶层了当然主要内容也就是这些
+If you want get the money difference between every pop type,you can write
 
-date 当前日期
-player 当前玩家，当然实际上任何存档可以随时切换玩家，这个可能只是显示旗帜提醒你用的
-government 政府类型？为什么这个要专门标出来？可能前面的要显示存档时快速读取用
-automate_trade 自动贸易？。。是继承HOI没删掉的属性？。。
-automate_sliders  what fuck..
-rebel ???叛军的专用id吗
-unit ???1939?
-state ???
-flags 貌似是玩家吃的那些值为yes的flag，如自由主义革命
-gameplaysetting 不知道什么鬼
-start_date 游戏开始日期
-start_pop_index 初始pop的index？链表？
-worldmarket 由 worldmarket_pool price_pool last_price_history supply_pool last_supply_pool 各一个以及一堆price_history组成。每个元素都是每个商品的一个数值（价格/需求量/生产量）映射 price_history_last_update price_change discovered_goods actual_sold actual_sold_world real_demand demand player_balance 还有一堆不完全的cache标记
-#总的来说worldmarket是用来形成贸易那个界面用的。另外这似乎反映了存档文件的惰性保存风格，它们全是以每个记录都会造成有意义的改变——换而言之，如果没有改变，仍为默认值的话就不保存为思想记录的。虽然这显得保存的结构参差不齐，但并没有什么问题。
-great_wars_enabled 
-world_wars_enabled
-overseas_penelty
-unit_cost 单位开销，弹药那些
-budget_balance 一组值，不知道什么预算
-player_monthly_pop_growth 可能是用来形成历史序列用的
-player_monthly_pop_grouwth_tag 
-player_monthly_pop_growth_date 应该和上面那个市场价格一样是用来反应人口变化的截断日期，不过并没有发现在VIC2里哪里可以查看这一数值。
-fascist 法西斯事件？下同
-socialist
-communist
-anarcho_liberal
-canals 运河。这个要用专门的标记吗
-id 什么鬼。。
-fired_events  已发生事件？由一系列id={id=31300 type=39}之类的记录组成
-1={...} 2={...} 区域大数组，下面详述
-大数组下面有一些貌似是海域的记录，其虽然属于大数组，但是内容都很简单，{name="coast of Britanny" garrison=100.000}之类的东西。
-REB={...}国家大数组（这尼玛怎么都放在顶层。。）
-一堆rebel_faction 反向标记哪些pop是叛党等
-diplomacy 这个似乎不是真外交，而是一些真实历史信息，比如1822.1.1到1847.7.26（这档是1842的，也有到1949的）的盟友。可能是反映传统关系之类的数据
-combat 这里貌似是一系列正在进行的战斗的记录，理所当然主要由攻城战组成
-一系列active_war 正在发生的战争，和下面那个一起可能是那个java存档解析器主要的解析目标
-一系列previous_war 还有独立战争。。什么鬼
+    fname="Austria1842_01_12.v2"
+	rd=parse(fname)
+	compare(rd['pop'].values(),'type','money','size',lambda x,y:x/y)
+	
+	#output
+	
+	{'aristocrats': 9.625056091029595,
+	 'artisans': 38.15793913654974,
+	 'bureaucrats': 37.52131961604235,
+	 'capitalists': 82.18523590417432,
+	 'clergymen': 19.178399648710972,
+	 'clerks': 0.265947480913789,
+	 'craftsmen': 0.15695837161169315,
+	 'farmers': 0.12304308272016873,
+	 'labourers': 0.3752830561735873,
+	 'officers': 85.9927684575011,
+	 'slaves': 0.0,
+	 'soldiers': 0.14348662843137552}
+	 
+Amazing, officers is richer more than capitalists! But if you use (pop based nor people number based)
+	
+	import numpy as np
+	groupby(rd['pop'].values(),'type',lambda x:float(x['money'])/float(x['size']),np.mean)
+	
+	#output
+	
+	{'aristocrats': 51.655352713336022,
+	 'artisans': 65.626469820212023,
+	 'bureaucrats': 65.079944042148796,
+	 'capitalists': 2188.100203835832,
+	 'clergymen': 37.602388350193799,
+	 'clerks': 2.5992404964605602,
+	 'craftsmen': 1.6888556807526469,
+	 'farmers': 0.61943297527129282,
+	 'labourers': 0.99225451021965738,
+	 'officers': 296.13967809158294,
+	 'slaves': 0.0,
+	 'soldiers': 1.8352265548525066}
+	 
+The raw cross table data formal.I have not write a function to print it pretty.
 
-invention
-great_nations 列强id
-outliner
-news_collector 新闻信息
-crisis_manager 危机？
-region 不知道在记录什么。。貌似就是危机区域，你这个完全依据顺序来记录真的好吗
-
-一个没有相应的 } 宣告存档文件eof了
-
-pop标记
-pop都是用
-类型={...} 出现在区域描述段里的
-类型
-aristocrats 贵族
-artisans 可能是手工业者，也可能是劳工或者技工
-bureaucrats 官僚
-clergymen 牧师
-labourers劳工
-officers军官
-soldiers士兵
-字段:
-id pop id
-size 人数
-native_american_minor=animist 这种形式 民族=宗教 秘制语法
-money 不知道是哪种钱
-ideology 意识形态占比，里面是{1=12.8 3=64.3}这样的记法
-issues 主要政见 就是需要集会自由，需要自由贸易那种，记法类似上面
-con 什么鬼
-mil 什么鬼
-literacy 识字率？
-bank 存款？
-con_factor ?
-everyday_needs 日常品需求满足度？
-luxury_needs 奢侈品需求满足度？
-random ?
-
-rgo感觉只有一些废话信息
-
-国家大数组
-tax_base 税基，这个专门拉出来是什么鬼。。
-flags
-variables 
-capital 首都
-technology 块，科技一些条目，按照默认+修改原则，这里实际记录的都是已经研发完的
-research 块，正在研发科技的一些情况
-last_reform 应该是上一次议会改革事件
-last_election 上一次选举时间
-一堆社会政策=XX状况。。
-upper_house 块，各意识形态所占比
-ruling_party 执政党，不过不知道这个id到底指什么，也许是国家的政党文件里的政党id
-active_party 已经激活但没有执政的党
-naval_need 块，就是运输损耗（维护）那个
-land_supply_cost 陆军补给消耗
-naval_supply_cost 海军补给消耗
-diplomatic_points 外交点数
-religion 官方宗教（原来有吗。。从没注意到）
-government 政府类型
-plurality 多元化
-revanchism 复仇主义
-rich_tax 块，富裕阶级税收。记录了比例，当前收入，效率，最大最小区间等
-middle_tax 同上
-poor_tax 同上
-education_spending 教育开支，这些由与上面的类似，主要反映你看到的界面的状态
-crime_fighting 同上（犯罪斗争开支。。行政开支）
-social_spending 同上
-military_spending 同上
-overseas_penalty ?也许是殖民那个数值
-leadership 领导力
-auto_assign_leaders 
-auto_create_leaders
-leader 一堆leader={}的块，
-army 一堆army={}的块，注意army里持有了reginment块是陆军单位。类似的还有navy-ship
-国家大数组，每个项是块，映射关系值与上一次外交时间，势力范围那一套
-active_inventions 已激活发明
-illegal_inventions 不可激活发明？
-government_flag
-last_mission_cancel
-ai_hard_strategy
-ai 一堆征服省份的指令、、
-foreign_investment
-schools 科技组
-primary_culture 主体文化圈
-culture 可接受？
-prestige 声望
-bank
-money
-last_bankrupt 
-movement 社会运动
-stockpile 库存
-nationalvalue 平等自由秩序那个
-buy_domestic
-trade
-civilized 开化
-last_greatness_date
-state 一堆state={}块，这个很重要，工厂就在这，下面展开讲
-
-state:
-id
-provinces id数组,貌似是对该国而言的state包括的区域
-savings 储蓄？国家银行显示的那个？
-interest 利息？怎么利息比储蓄还多。。
-popproject 什么鬼。。有点像工厂
-state_buildings 工厂记录
-
-state_buildings:
-building 工厂类型
-level 等级，0是在建
-stockpile 库存,商品映射
-employment 是一些匿名块组成的序列，记录了雇佣情况。包括该state的该building的雇佣人来自state中的哪个province(id)，雇佣类型是哪个（type），应该是用index区分该province的不同同类pop的。不过还没发现证据
-money 资金？在游戏里也没发现是干吗用的，破产也不是看这个
-last_spending 最近支出
-last_income 最近收入
-pops_paychecks 薪水
-last_investment 最后投资，什么鬼？
-unprofitable_days 破产时间？
-subsidised 是否被补贴
-leftover 剩下的？没卖出去的还是没用完的
-injected_money 注入资金？
-injected_days 注入天？
-produces 生产了多少产品
-profit_history_days 连续取得利润天数？
-profit_history_current 当前连续获利天数？
-profit_history_entry 数组，貌似是过去7天的获利天数
+    groupby_2(rd['pop'].values(),'religion','type',lambda x:float(x['literacy']),np.mean)
+	
+	#output
+	
+	{('animist', 'aristocrats'): 0.097530178890876576,
+	 ('animist', 'artisans'): 0.094284847528916929,
+	 ('animist', 'bureaucrats'): 0.09286999999999998,
+	 ('animist', 'clergymen'): 0.099220528255528267,
+	 ('animist', 'craftsmen'): 0.10181,
+	 ('animist', 'farmers'): 0.092818212616822438,
+	 ('animist', 'labourers'): 0.093381575342465759,
+	 ('animist', 'officers'): 0.11389851239669421,
+	 ('animist', 'slaves'): 0.10098021645021643,
+	 ('animist', 'soldiers'): 0.10019658808933,
+	 ('catholic', 'aristocrats'): 0.25144244131455401,
+	 ('catholic', 'artisans'): 0.2280023443504996,
+	 ('catholic', 'bureaucrats'): 0.26662353846153847,
+	 ('catholic', 'capitalists'): 0.50926965517241374,
+	 ('catholic', 'clergymen'): 0.22241748259860789,
+	 ('catholic', 'clerks'): 0.61087580000000008,
+	 ('catholic', 'craftsmen'): 0.37941288659793815,
+	 ('catholic', 'farmers'): 0.19744205267938239,
+	 ('catholic', 'labourers'): 0.25718532085561496,
+	 ('catholic', 'officers'): 0.23532525849335303,
+	 ('catholic', 'slaves'): 0.070450239999999983,
+	 ('catholic', 'soldiers'): 0.22982854588796184,
+	 ('coptic', 'aristocrats'): 0.069061666666666674,
+	 ('coptic', 'artisans'): 0.065425555555555556,
+	 ('coptic', 'bureaucrats'): 0.071777499999999994,
+	 ('coptic', 'clergymen'): 0.066284545454545443,
+	 ('coptic', 'farmers'): 0.065995476190476202,
+	 ('coptic', 'officers'): 0.067410999999999999,
+	 ('coptic', 'soldiers'): 0.066377777777777786,
+	 ('gelugpa', 'aristocrats'): 0.040963333333333338,
+	 ('gelugpa', 'artisans'): 0.031205957446808517,
+	 ('gelugpa', 'bureaucrats'): 0.026635999999999993,
+	 ('gelugpa', 'clergymen'): 0.029568974358974362,
+	 ('gelugpa', 'farmers'): 0.031806857142857144,
+	 ('gelugpa', 'labourers'): 0.036990999999999996,
+	 ('gelugpa', 'officers'): 0.020413999999999998,
+	 ('gelugpa', 'soldiers'): 0.027577948717948716,
+	 ('hindu', 'aristocrats'): 0.073993181818181819,
+	 ('hindu', 'artisans'): 0.090110423280423277,
+	 ('hindu', 'bureaucrats'): 0.069116764705882364,
+	 ('hindu', 'clergymen'): 0.082130196078431361,
+	 ('hindu', 'farmers'): 0.078829545454545458,
+	 ('hindu', 'labourers'): 0.097977500000000009,
+	 ('hindu', 'officers'): 0.076643478260869563,
+	 ('hindu', 'soldiers'): 0.081728500000000023,
+	 ('jewish', 'artisans'): 0.21248386956521739,
+	 ('jewish', 'capitalists'): 0.55936666666666668,
+	 ('jewish', 'clergymen'): 0.10100000000000001,
+	 ('jewish', 'clerks'): 0.68134249999999996,
+	 ('jewish', 'craftsmen'): 0.37677777777777777,
+	 ('jewish', 'farmers'): 0.10942945054945055,
+	 ('jewish', 'labourers'): 0.20987730769230772,
+	 ('jewish', 'officers'): 0.10515999999999999,
+	 ('jewish', 'soldiers'): 0.108552,
+	 ('mahayana', 'aristocrats'): 0.080913538461538467,
+	 ('mahayana', 'artisans'): 0.073721050531914883,
+	 ('mahayana', 'bureaucrats'): 0.094954509803921575,
+	 ('mahayana', 'clergymen'): 0.093927859531772573,
+	 ('mahayana', 'farmers'): 0.08077644827586207,
+	 ('mahayana', 'labourers'): 0.082690472440944879,
+	 ('mahayana', 'officers'): 0.1046403260869565,
+	 ('mahayana', 'soldiers'): 0.091492358490566028,
+	 ('orthodox', 'aristocrats'): 0.11234129629629629,
+	 ('orthodox', 'artisans'): 0.10440560878243513,
+	 ('orthodox', 'bureaucrats'): 0.11179434782608695,
+	 ('orthodox', 'clergymen'): 0.10552402116402117,
+	 ('orthodox', 'craftsmen'): 0.10454794871794872,
+	 ('orthodox', 'farmers'): 0.10315835990888383,
+	 ('orthodox', 'labourers'): 0.10438884816753928,
+	 ('orthodox', 'officers'): 0.10795,
+	 ('orthodox', 'soldiers'): 0.11011095238095239,
+	 ('protestant', 'aristocrats'): 0.51890286764705884,
+	 ('protestant', 'artisans'): 0.43736179999999997,
+	 ('protestant', 'bureaucrats'): 0.58984263157894745,
+	 ('protestant', 'capitalists'): 0.6222700000000001,
+	 ('protestant', 'clergymen'): 0.47684353182751543,
+	 ('protestant', 'clerks'): 0.60872825503355699,
+	 ('protestant', 'craftsmen'): 0.54351864999999999,
+	 ('protestant', 'farmers'): 0.36081034904013959,
+	 ('protestant', 'labourers'): 0.39872415966386554,
+	 ('protestant', 'officers'): 0.5589642328042328,
+	 ('protestant', 'slaves'): 0.10377172413793104,
+	 ('protestant', 'soldiers'): 0.50646566160520612,
+	 ('shiite', 'aristocrats'): 0.092678333333333321,
+	 ('shiite', 'artisans'): 0.083076700000000003,
+	 ('shiite', 'bureaucrats'): 0.094745384615384592,
+	 ('shiite', 'clergymen'): 0.081556301369863013,
+	 ('shiite', 'farmers'): 0.08793309278350514,
+	 ('shiite', 'labourers'): 0.083009411764705887,
+	 ('shiite', 'officers'): 0.080759344262295071,
+	 ('shiite', 'soldiers'): 0.084875671641791037,
+	 ('shinto', 'aristocrats'): 0.40579666666666664,
+	 ('shinto', 'artisans'): 0.405725,
+	 ('shinto', 'clergymen'): 0.40571722222222223,
+	 ('shinto', 'farmers'): 0.40549366666666664,
+	 ('shinto', 'labourers'): 0.40548200000000001,
+	 ('shinto', 'officers'): 0.40575666666666671,
+	 ('shinto', 'soldiers'): 0.40554351351351353,
+	 ('sikh', 'aristocrats'): 0.065720000000000001,
+	 ('sikh', 'artisans'): 0.035432499999999999,
+	 ('sikh', 'bureaucrats'): 0.020393333333333333,
+	 ('sikh', 'clergymen'): 0.046181428571428575,
+	 ('sikh', 'farmers'): 0.040485555555555552,
+	 ('sikh', 'officers'): 0.020366666666666668,
+	 ('sikh', 'soldiers'): 0.038444999999999993,
+	 ('sunni', 'aristocrats'): 0.083776183844011143,
+	 ('sunni', 'artisans'): 0.076528372811534504,
+	 ('sunni', 'bureaucrats'): 0.064944220183486251,
+	 ('sunni', 'clergymen'): 0.076951176470588231,
+	 ('sunni', 'craftsmen'): 0.082524,
+	 ('sunni', 'farmers'): 0.076371173913043489,
+	 ('sunni', 'labourers'): 0.073583657142857153,
+	 ('sunni', 'officers'): 0.072042338461538458,
+	 ('sunni', 'soldiers'): 0.078143416886543526,
+	 ('theravada', 'aristocrats'): 0.063065999999999997,
+	 ('theravada', 'artisans'): 0.054390289855072459,
+	 ('theravada', 'bureaucrats'): 0.060287,
+	 ('theravada', 'clergymen'): 0.056508196721311486,
+	 ('theravada', 'farmers'): 0.057580689655172421,
+	 ('theravada', 'labourers'): 0.044456315789473684,
+	 ('theravada', 'officers'): 0.063431578947368422,
+	 ('theravada', 'soldiers'): 0.055480454545454548}
