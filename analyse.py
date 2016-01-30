@@ -12,8 +12,8 @@ import numpy as np
 import matplotlib.pylab as plt
 
 
-def sample():
-    root='../Victoria 2/save games'
+def sample(root='../Victoria 2/save games'):
+    #root='../Victoria 2/save games'
     al=[]
     for name in os.listdir(root):
         r=re.match(r'Korea(\d\d\d\d)_(\d\d)_(\d\d)\.v2',name)
@@ -41,20 +41,14 @@ def test(al):
             size_t+=float(pop['size'])
         money_seq.append(money_t)
         size_seq.append(size_t)
-        
-def extract(rd,type_key,keys):
-    #将rd以type_key对各keys求和
-    rrd={key:0.0 for key in keys}
-    for pop in rd['pop'].values():
-        for key in keys:
-            rrd[key]+=float(pop[key])
-    return rrd
-        
-def test2(al):
-    seq=[]#stat是汇总字典，这里应该返回各个
+
+
+def extract(al,progress=True):
+    seq=[]#
     for a in al:
         rd=parse(a['path'])
-        print 'load '+a['path']+' succ'
+        if progress:
+            print 'load '+a['path']+' succ'
         main_keys=['type','religion']
         wait_keys=['size','money']
         weight_keys=['literacy']
@@ -76,7 +70,8 @@ def test2(al):
         record['sum']['sum']={sk:sum([sd[sk] for sd in sur_l]) for sk in sur_l[0].keys()}
         record['date']=a['date']
         seq.append(record)
-        print 'deal '+a['path']+' succ'
+        if progress:
+            print 'deal '+a['path']+' succ'
     return seq
     
 def T(seq,main_key,sub_key,key):
@@ -100,7 +95,7 @@ def report_p(seq,main_key,key1,key2):
         plt.plot(axis,l1/l2)
         plt.show()
         print ' '
-def percent_flow(seq,main_key,detail=None):
+def percent_flow(seq,main_key,detail=None,loc=2):
     sub_keys=seq[0]['sum'][main_key].keys()
     d={sk:T(seq,main_key,sk,'size') for sk in sub_keys}
     ds=np.array([sum([sl[i] for sl in d.values()]) for i in range(len(d.values()[0]))])
@@ -110,9 +105,10 @@ def percent_flow(seq,main_key,detail=None):
             y=np.array(value)/ds
             plt.plot(axis,y,label=key)
     else:
-        y=np.array(d[detail])/ds
-        plt.plot(axis,y,label=detail)
-    plt.legend()
+        for dd in detail:
+            y=np.array(d[dd])/ds
+            plt.plot(axis,y,label=dd)
+    plt.legend(loc=loc)
     plt.show()
     
 def report_par(seq,main_key,skl,key1,key2,loc=2):
