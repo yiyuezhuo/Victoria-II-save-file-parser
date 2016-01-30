@@ -170,4 +170,4 @@ The raw cross table data formal.I have not write a function to print it pretty.
 	 ('theravada', 'officers'): 0.063431578947368422,
 	 ('theravada', 'soldiers'): 0.055480454545454548}
 
-More content please look at Example.ipynb file.Long live GitHub!It looks very pretty.And it has some graph.
+More content please look at the `Example.ipynb` file.Long live GitHub!It looks very pretty.And it has some graph.
