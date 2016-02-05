@@ -10,6 +10,7 @@ from select2 import parse
 #from collections import defaultdict
 import numpy as np
 import matplotlib.pylab as plt
+import copy
 
 
 def sample(root='../Victoria 2/save games'):
@@ -22,11 +23,6 @@ def sample(root='../Victoria 2/save games'):
     al.sort(key=lambda x:x['date'][0])
     return al
 
-'''
-1853重复
-缺1855
-缺1918
-'''
 def test(al):
     global money_seq,size_seq
     money_seq=[]
@@ -55,7 +51,7 @@ def extract(al,progress=True):
         #dd=defaultdict(lambda:{'size':0.0,'money':0.0})
         sum_dict={mk:{} for mk in main_keys}
         #sum_dict['sum']={wk:0.0 for wk in wait_keys}#sum是直接和，不分类
-        record={'pop_number':len(rd['pop'].values()),'sum':sum_dict}
+        record={'pop_number':len(rd['pop'].values()),'sum':sum_dict,'main_number':copy.deepcopy(sum_dict)}
         for pop in rd['pop'].values():
             for mk in main_keys:
                 tk=pop[mk]
@@ -66,6 +62,7 @@ def extract(al,progress=True):
                 for wk in weight_keys:
                     record['sum'][mk][tk][wk]+=float(pop[wk])*float(pop['size'])
                     #record['sum'][mk][wk]+=float(pop[wk])
+                record['main_number'][mk][tk]=record['main_number'][mk].get(tk,0)+1
         sur_l=record['sum']['type'].values()
         record['sum']['sum']={sk:sum([sd[sk] for sd in sur_l]) for sk in sur_l[0].keys()}
         record['date']=a['date']
