@@ -6,6 +6,17 @@ Created on Wed Jan 27 20:40:05 2016
 """
 from collections import defaultdict
 
+def pure(x):
+    try:
+        float_x=float(x)
+        try:
+            int_x=int(x)
+            return int_x
+        except:
+            return float_x
+    except:
+        return x
+
 
 def take(sl,index):
     rd={}
@@ -22,9 +33,40 @@ def take(sl,index):
         if level==0 and '=' in line:
             #print line
             key,value=line.split('=')
-            rd[key.strip()]=value
+            if value!='':
+                #rd[key.strip()]=value
+                rd[key.strip()]=pure(value)
+            else:
+                rd[key.strip()]=('block',i)
         i+=1
     return rd
+    
+def take_pop(sl,index):
+    rd={}
+    i=index+2
+    level=0
+    while True:
+        if i==index+4:#fuck paradox
+            i+=1
+            continue
+        line=sl[i]
+        if '{' in line:
+            level+=1
+        if '}' in line:
+            level-=1
+        if level<0:
+            return rd
+        if level==0 and '=' in line:
+            #print line
+            key,value=line.split('=')
+            if value!='':
+                #rd[key.strip()]=value
+                rd[key.strip()]=pure(value)
+            else:
+                rd[key.strip()]=('block',i)
+        i+=1
+    return rd
+
     
 def is_province(sl,index):
     return '=' in sl[index] and sl[index].split('=')[0].strip().isdigit() and '{' in sl[index+1] and 'name' in sl[index+2]
@@ -37,6 +79,9 @@ def is_country(sl,index):
     
 def is_state(sl,index):
     return 'state=' in sl[index] and '{' in sl[index+1] and 'id=' in sl[index+2] 
+
+def is_worldmarket(sl,index):
+    return 'worldmarket=' in sl[index] and 'worldmarket' in sl[index+2]
 
 
 def province_parse(sl,index):
@@ -52,7 +97,8 @@ def pop_parse(sl,index):
     nation,religion=sl[index+4].split('=')
     pop['nation']=nation.strip()
     pop['religion']=religion.strip()
-    rd=take(sl,index)
+    #rd=take(sl,index)
+    rd=take_pop(sl,index)
     pop.update(rd)
     return pop
     
@@ -61,6 +107,9 @@ def country_parse(sl,index):
     country['id']=sl[index].split('=')[0].strip()
     rd=take(sl,index)
     country.update(rd)
+    for key in pool_keys:
+        dummy,index=country[key]
+        country[key]=take(sl,index)
     return country
     
 def state_parse(sl,index):
@@ -69,11 +118,22 @@ def state_parse(sl,index):
     state['type']=sl[index+5].split('=')[1].strip()
     state['provinces']=sl[index+9].split('}')[0].strip().split(' ')
     return state
+    
+def worldmarket_parse(sl,index):
+    top=take(sl,index)
+    market={}
+    for key,value in top.items():
+        if type(value)==tuple and value[0]=='block':
+            market[key]=take(sl,value[1])
+        else:
+            market[key]=value
+    return market
 
 
 def scan(sl):
     '''This return a great dict for province,pop,country,state as a id-label dict'''
     rd={'province':[],'pop':[],'country':[],'state':[]}
+    worldmarket=None
     for i in range(len(sl)-3):
         if is_province(sl,i):
             rd['province'].append(province_parse(sl,i))
@@ -94,7 +154,11 @@ def scan(sl):
             rd['state'][-1]['_index']=i
             rd['state'][-1]['country']=rd['country'][-1]['id']
             rd['country'][-1]['state'].append(rd['state'][-1]['id'])
+        elif is_worldmarket(sl,i):
+            worldmarket=worldmarket_parse(sl,i)
     rd={tk:{obj['id']:obj for obj in rd[tk]} for tk in rd.keys()}
+    #rd={tk:{obj['id']:obj for obj in rd[tk]} for tk in ['province','pop','country','state']}
+    rd['worldmarket']=worldmarket
     for sta in rd['state'].values():
         for pid in sta['provinces']:
             try:
@@ -103,6 +167,33 @@ def scan(sl):
                 print sta
                 raise KeyError
             pro['state']=sta['id']
+    # 推断pop的国家属性,存在不明遗漏，当前448k，应该不影响大局
+    for key,value in rd['pop'].items():
+        '''
+        try:
+            c=rd['state'][rd['province'][[value['province']]]['state']]['country']
+        except:
+            c=None
+        '''
+        try:
+            province=value['province']
+            state=rd['province'][province]['state']
+            #try:
+            #    state=rd['province'][province]['state']
+            #except:
+            #    print rd['province'][province]['_index']
+            #    raise 'fuck'
+            country=rd['state'][state]['country']
+            #c=rd['state'][rd['province'][[value['province']]]['state']]['country']
+            rd['pop'][key]['country']=country
+        except:
+            rd['pop'][key]['country']=None
+    for country in rd['country'].values():
+        country['pop_size']=0
+    for pop in rd['pop'].values():
+        if pop['country']:
+            country=rd['country'][pop['country']]
+            country['pop_size']+=int(pop['size'])
     return rd
 
 
@@ -175,3 +266,4 @@ def test():
     fname="Austria1842_01_12.v2"
     rd=parse(fname)
 
+pool_keys=['domestic_supply_pool','domestic_demand_pool','actual_sold_domestic','saved_country_supply','max_bought']
