@@ -265,5 +265,58 @@ def test():
     global rd
     fname="Austria1842_01_12.v2"
     rd=parse(fname)
+    
+def to_unicode(s):
+    try:
+        return unicode(s)
+    except UnicodeDecodeError:
+        return unicode(s,encoding='gbk')
+    
+def shrink(record):
+    # block元组,列表直接删除，子字典将父字典以_拼接合并
+    new_record={}
+    for key,value in record.items():
+        if value ==None:
+            continue
+        typ=type(value)
+        if typ in [list,tuple]:
+            continue
+        elif typ==dict:
+            rv=shrink(value)
+            for keyp,valuep in rv.items():
+                new_record[key+'_'+keyp]=valuep
+        elif typ == str:
+            try:
+                new_record[key]=unicode(value)
+            except UnicodeDecodeError:
+                #new_record[key]=unicode(value,encoding='gbk')
+                new_record[key]=to_unicode(to_unicode)
+        elif typ in [int,unicode,float,long]:
+            new_record[key]=value
+        else:
+            print key,value
+            raise 'error'
+    return new_record
+    
+def to_sql(rd,connect_path='bignews.db'):
+    import pandas as pd
+    import sqlite3
+    import os
+    
+    if os.path.isfile(connect_path):
+        os.remove(connect_path)
+    
+    con=sqlite3.connect(connect_path)
+    try:
+        for listlike in ['pop','province','state','country']:
+            l_l=[shrink(record) for record in rd[listlike].values()]
+            pd.DataFrame(l_l).to_sql(listlike,con)
+        pd.DataFrame([shrink(rd['worldmarket'])]).to_sql('worldmarket',con)
+    except Exception,e:
+        raise e
+    finally:
+        con.close()
+
+
 
 pool_keys=['domestic_supply_pool','domestic_demand_pool','actual_sold_domestic','saved_country_supply','max_bought']

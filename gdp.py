@@ -80,8 +80,41 @@ def get_table(rd):
         for _key in href:
             nd[_key]=country[_key]
         rl.append(nd)
-    return pd.DataFrame(rl)
+    df=pd.DataFrame(rl)
+    df['agdp']=df['domestic_demand_pool']/df['pop_size']
+    df['p']=df['domestic_supply_pool']/df['domestic_demand_pool']
+    return df
+
+def get_agdp(rd):
+    df=get_table(rd)
+    dl=df.dropna()[['id','agdp']].to_dict('records')
+    return {d['id']:d['agdp'] for d in dl}
+    
+def replace_name(dic,name_d):
+    #只是修改dic的key利用name_d
+    _dic={}
+    for key,value in dic.items():
+        try:
+            name=name_d[key].decode('gbk')
+        except:
+            name=key
+        _dic[name]=value
+    return _dic
+def nice_show(dic,name_d=None,sort=True,key=None):
+    if name_d:
+        dic=replace_name(dic,name_d=name_d)
+    it=dic.items()
+    if sort:
+        it.sort(key=key)
+    for left,right in it:
+        print left,right
+        
+def sort_two_columns(df,key1,key2,name_d=None,sort=True,key=None):
+    dl=df.dropna()[[key1,key2]].to_dict('records')
+    nice_show({d[key1]:d[key2] for d in dl},name_d=name_d,sort=sort,key=key)
 
 
+name_d=id_to_name()
 sl=file_l()
 rd=sample()
+#nice_show(get_agdp(rd),key=lambda x:x[1],name_d=name_d)
