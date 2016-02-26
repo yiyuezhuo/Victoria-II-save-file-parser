@@ -284,7 +284,7 @@ def shrink(record):
         elif typ==dict:
             rv=shrink(value)
             for keyp,valuep in rv.items():
-                new_record[key+'_'+keyp]=valuep
+                new_record['__'+key+'__'+keyp]=valuep
         elif typ == str:
             try:
                 new_record[key]=unicode(value)
