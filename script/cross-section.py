@@ -73,6 +73,10 @@ def get_mat(rd):
     dt=dt.dropna()
     return dt
     
+def sample(path="../SPA1901_09_28.v2"):
+    return parse(path)
+rd=sample()
+    
 dt=get_mat(rd)
 dt['logam']=np.log(dt['a_money']+0.01)
 #dt.applymap(lambda x:np.NaN if abs(x)>10000 else x)

@@ -11,7 +11,7 @@ from select2 import parse
 import numpy as np
 import pandas as pd
 
-def sample(path="SPA1901_09_28.v2"):
+def sample(path="../SPA1901_09_28.v2"):
     return parse(path)
     
 rd=sample()

@@ -15,7 +15,8 @@ def pure(x):
         except:
             return float_x
     except:
-        return x
+        return x.strip()
+        #return x
 
 
 def take(sl,index):
@@ -37,8 +38,33 @@ def take(sl,index):
                 #rd[key.strip()]=value
                 rd[key.strip()]=pure(value)
             else:
-                rd[key.strip()]=('block',i)
+                key_strip=key.strip()
+                if not(rd.has_key(key_strip)):
+                    rd[key_strip]=('block',i)
+                else:
+                    if type(rd[key_strip][1])!=list:
+                        rd[key_strip]=('block',[rd[key_strip][1],i])
+                    else:
+                        rd[key_strip][1].append(i)
         i+=1
+    return rd
+    
+def take_recursion(sl,index):
+    '''All use this function will go a memory hell'''
+    rd=take(sl,index)
+    trace_l=[]
+    for key,value in rd.items():
+        if type(value)==tuple and value[0]=='block':
+            trace_l.append(key)
+    if len(trace_l)==0:
+        return rd
+    for key in trace_l:
+        if type(rd[key][1])!=list:
+            recur=take_recursion(sl,rd[key][1])
+            rd[key]=recur if len(recur)!=0 else ('block',rd[key][1]) 
+        else:
+            recurs=[take_recursion(sl,block_index) for block_index in rd[key][1]]
+            rd[key]=[recurs[i] if len(recurs[i])!=0 else ('block',rd[key][1][i]) for i in range(len(rd[key][1]))]
     return rd
     
 def take_pop(sl,index):
@@ -82,6 +108,10 @@ def is_state(sl,index):
 
 def is_worldmarket(sl,index):
     return 'worldmarket=' in sl[index] and 'worldmarket' in sl[index+2]
+    
+def is_state_buildings(sl,index):
+    return 'state_buildings=' in sl[index]
+
 
 
 def province_parse(sl,index):
@@ -110,6 +140,7 @@ def country_parse(sl,index):
     for key in pool_keys:
         dummy,index=country[key]
         country[key]=take(sl,index)
+    country['bank']=take_recursion(sl,country['bank'][1])
     return country
     
 def state_parse(sl,index):
@@ -120,6 +151,7 @@ def state_parse(sl,index):
     return state
     
 def worldmarket_parse(sl,index):
+    '''
     top=take(sl,index)
     market={}
     for key,value in top.items():
@@ -128,11 +160,17 @@ def worldmarket_parse(sl,index):
         else:
             market[key]=value
     return market
+    '''
+    return take_recursion(sl,index)
+    
+def state_buildings_parse(sl,index):
+    return take_recursion(sl,index)
 
 
 def scan(sl):
     '''This return a great dict for province,pop,country,state as a id-label dict'''
     rd={'province':[],'pop':[],'country':[],'state':[]}
+    buildings=[]
     worldmarket=None
     for i in range(len(sl)-3):
         if is_province(sl,i):
@@ -156,9 +194,15 @@ def scan(sl):
             rd['country'][-1]['state'].append(rd['state'][-1]['id'])
         elif is_worldmarket(sl,i):
             worldmarket=worldmarket_parse(sl,i)
+        elif is_state_buildings(sl,i):
+            building=state_buildings_parse(sl,i)
+            building['_index']=i
+            building['state']=rd['state'][-1]['id']
+            buildings.append(building)
     rd={tk:{obj['id']:obj for obj in rd[tk]} for tk in rd.keys()}
     #rd={tk:{obj['id']:obj for obj in rd[tk]} for tk in ['province','pop','country','state']}
     rd['worldmarket']=worldmarket
+    rd['building']=buildings
     for sta in rd['state'].values():
         for pid in sta['provinces']:
             try:
@@ -188,6 +232,13 @@ def scan(sl):
             rd['pop'][key]['country']=country
         except:
             rd['pop'][key]['country']=None
+    for bd in rd['building']:
+        try:
+            state=bd['state']
+            country=rd['state'][state]['country']
+            bd['country']=country
+        except:
+            bd['country']=None
     for country in rd['country'].values():
         country['pop_size']=0
     for pop in rd['pop'].values():
@@ -195,60 +246,6 @@ def scan(sl):
             country=rd['country'][pop['country']]
             country['pop_size']+=int(pop['size'])
     return rd
-
-
-
-def groupby(l,key,f=None,ff=None):
-    if f==None:
-        f=lambda x:x
-
-    dd=defaultdict(list)
-    for obj in l:
-        dd[obj[key]].append(f(obj))
-    if ff!=None:
-        dd={key:ff(value) for key,value in dd.items()}
-    return dd
-    
-def compare(pl,key,x,y,f=None,x_weight=False,y_weight=False):
-    if f==None:
-        f=lambda x:x
-		
-    if x_weight:
-        xd=groupby(pl,key,lambda pop:float(pop[x])*float(pop['size']),ff=lambda pop_l:sum(pop_l))
-    else:
-        xd=groupby(pl,key,lambda pop:float(pop[x]),ff=lambda pop_l:sum(pop_l))
-    if y_weight:
-        xd=groupby(pl,key,lambda pop:float(pop[x]),ff=lambda pop_l:sum(pop_l))
-    else:
-        yd=groupby(pl,key,lambda pop:float(pop[y]),ff=lambda pop_l:sum(pop_l))
-    
-    return {key:f(xd[key],yd[key]) for key in xd.keys()}
-    
-def groupby_2(l,key1,key2,f=None,ff=None):
-    if f==None:
-        f=lambda x:x
-
-    dd=defaultdict(list)
-    for obj in l:
-        dd[(obj[key1],obj[key2])].append(f(obj))
-    if ff!=None:
-        dd={key:ff(value) for key,value in dd.items()}
-    return dd
-    
-def compare_2(pl,key1,key2,x,y,f=None,x_weight=False,y_weight=False):
-    if f==None:
-        f=lambda x:x
-    
-    if x_weight:
-        xd=groupby_2(pl,key1,key2,lambda pop:float(pop[x])*float(pop['size']),ff=lambda pop_l:sum(pop_l))
-    else:
-        xd=groupby_2(pl,key1,key2,lambda pop:float(pop[x]),ff=lambda pop_l:sum(pop_l))
-    if y_weight:
-        xd=groupby_2(pl,key1,key2,lambda pop:float(pop[x]),ff=lambda pop_l:sum(pop_l))
-    else:
-        yd=groupby_2(pl,key1,key2,lambda pop:float(pop[y]),ff=lambda pop_l:sum(pop_l))
-    
-    return {key:f(xd[key],yd[key]) for key in xd.keys()}
 
 
 def parse(fname):
@@ -259,12 +256,42 @@ def parse(fname):
     sl=doc.split("\n")
     result=scan(sl)
     return result
-
-def test():
-    # if you want run the test please unzip the Austria1842_01_12.zip Victoria II game save file
-    global rd
-    fname="Austria1842_01_12.v2"
-    rd=parse(fname)
+    
+def parse_buildings(fname):
+    '''please pass a building.txt file to get building setting
+    . However you can find it in VIC2root/common/buildings.txt
+    to get it.'''
+    #fname=u'E:\\V2汉化版3.03\\common\\buildings.txt'
+    f=open(fname,'r')
+    doc=f.read()
+    f.close()
+    
+    ssl=[line.strip() for line in doc.split('\n') if len(line.strip())>0 and line[0]!='#']
+    sl=[]
+    for line in ssl:
+        if line.strip()[-1]=='{' and ('=' in line):
+            sl.append(line[:-2])
+            sl.append('{')
+        else:
+            sl.append(line)
+    sl.insert(0,'')
+    sl.insert(0,'')
+    sl.append('}')
+    sl.append('')
+    sl.append('')
+    res=take_recursion(sl,0)
+    return res
+    
+def get_building_price(rd,fname='buildings.txt'):
+    bd=parse_buildings(fname)
+    for key in bd:
+        price=0.0
+        for good,value in bd[key]['goods_cost'].items():
+            price+=rd['worldmarket']['price_pool'][good]*value
+        bd[key]['price']=price
+    for building in rd['building']:
+        building['value']=bd[building['building'][1:-1]]['price']
+    return rd
     
 def to_unicode(s):
     try:
@@ -297,6 +324,19 @@ def shrink(record):
             print key,value
             raise 'error'
     return new_record
+    
+def rd_shrink(rd):
+    import pandas as pd
+    ddf={}
+    for listlike in ['pop','province','state','country']:
+        l_l=[shrink(record) for record in rd[listlike].values()]
+        #pd.DataFrame(l_l).to_sql(listlike,con)
+        ddf[listlike]=pd.DataFrame(l_l)
+    #pd.DataFrame([shrink(rd['worldmarket'])]).to_sql('worldmarket',con)
+    ddf['worldmarket']=pd.DataFrame([shrink(rd['worldmarket'])])
+    return ddf
+
+    
     
 def to_sql(rd,connect_path='bignews.db'):
     import pandas as pd
