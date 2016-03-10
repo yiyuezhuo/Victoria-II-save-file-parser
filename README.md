@@ -6,7 +6,7 @@ It can be used to parse the brilliant game Victoria II by Parodox.
 
 We can see the relationship between gdp(this use `a_actual_sold_domestic` to model it) and literacy.
 
-<img src="p1.png">
+<img src="static/p1.png">
 
 run a ols for it(However it's not a proper model in any case)
 
@@ -38,7 +38,7 @@ run a ols for it(However it's not a proper model in any case)
 
 The average income about Christianity.
 
-<img src="p7.jpg">
+<img src="static/p7.jpg">
 
 
 ## API
