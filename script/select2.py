@@ -39,7 +39,8 @@ def take(sl,index):
                 rd[key.strip()]=pure(value)
             else:
                 key_strip=key.strip()
-                if not(rd.has_key(key_strip)):
+                #if not(rd.has_key(key_strip)):
+                if not key_strip in rd:
                     rd[key_strip]=('block',i)
                 else:
                     if type(rd[key_strip][1])!=list:
@@ -208,7 +209,7 @@ def scan(sl):
             try:
                 pro=rd['province'][pid]
             except KeyError:
-                print sta
+                print(sta)
                 raise KeyError
             pro['state']=sta['id']
     # 推断pop的国家属性,存在不明遗漏，当前448k，应该不影响大局
@@ -249,9 +250,13 @@ def scan(sl):
 
 
 def parse(fname):
+    '''
     f=open(fname,'r')
     doc=f.read()
     f.close()
+    '''
+    with open(fname,'r',encoding='utf8',errors='ignore') as f:
+        doc = f.read()
     
     sl=doc.split("\n")
     result=scan(sl)
@@ -292,12 +297,22 @@ def get_building_price(rd,fname='buildings.txt'):
     for building in rd['building']:
         building['value']=bd[building['building'][1:-1]]['price']
     return rd
-    
+
+'''
 def to_unicode(s):
     try:
         return unicode(s)
     except UnicodeDecodeError:
         return unicode(s,encoding='gbk')
+'''
+def to_unicode(s):
+    try:
+        return s.decode('utf8')
+    except UnicodeDecodeError:
+        return s.decode('gbk')
+def unicode(s):
+    return s.decode()
+
     
 def shrink(record):
     # block元组,列表直接删除，子字典将父字典以_拼接合并
@@ -318,10 +333,10 @@ def shrink(record):
             except UnicodeDecodeError:
                 #new_record[key]=unicode(value,encoding='gbk')
                 new_record[key]=to_unicode(to_unicode)
-        elif typ in [int,unicode,float,long]:
+        elif typ in [int,unicode,float]:
             new_record[key]=value
         else:
-            print key,value
+            print(key,value)
             raise 'error'
     return new_record
     
@@ -352,7 +367,7 @@ def to_sql(rd,connect_path='bignews.db'):
             l_l=[shrink(record) for record in rd[listlike].values()]
             pd.DataFrame(l_l).to_sql(listlike,con)
         pd.DataFrame([shrink(rd['worldmarket'])]).to_sql('worldmarket',con)
-    except Exception,e:
+    except Exception as e:
         raise e
     finally:
         con.close()

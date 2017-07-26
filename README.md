@@ -1,14 +1,14 @@
 # Victoria II game save file parser 
 
-It can be used to parse the brilliant game Victoria II by Parodox.
+It can be used to parse the save file of the brilliant game Victoria II built by Parodox.
 
 ## Example
 
-We can see the relationship between gdp(this use `a_actual_sold_domestic` to model it) and literacy.
+Let's see the relationship between gdp(this use `a_actual_sold_domestic` to model it) and literacy.
 
 <img src="static/p1.png">
 
-run a ols for it(However it's not a proper model in any case)
+Let's run a OLS to examine it (However it's not a proper model anyway).
 
 									  OLS Regression Results                              
 		==================================================================================
@@ -130,8 +130,9 @@ Or you like to see pop counts.
 		In [16]: len(rd['pop'])
 		Out[16]: 30242
 		
-Pop attributes`(('block'),number)` means this is a block that is not parsed currently.It's important because I use a convenient but 
-low efficiency load file. The `number` indicate the block location in origin file , so you can use other method to parse it .
+Pop attributes`(('block'),number)` means this is a block that is not parsed currently. 
+It's important because I use a convenient but low efficiency method to load file. 
+The `number` indicate the block location in origin file , so you can use other method to parse it .
 
 		In [17]: rd['pop'].values()[0]
 		Out[17]: 
@@ -577,6 +578,9 @@ You see some example how to extract information from the dictionary. It provide 
 
 This provide some method save the big dictionary for time-series analysis.
 
+### Example.ipynb
+
+More images and interactive example.
 
 ## TODO
 

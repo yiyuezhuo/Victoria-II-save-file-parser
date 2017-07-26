@@ -5,7 +5,7 @@ Created on Mon Feb 29 12:01:30 2016
 @author: yiyuezhuo
 """
 import sys
-print sys.path
+print(sys.path)
 
 from webui.config import CUR_DIR,db_path
 import os
@@ -20,7 +20,7 @@ from flask import (
     render_template, request, url_for)
 
 #CUR_DIR = os.path.realpath(os.path.dirname(__file__))
-print 'CUR_DIR',CUR_DIR
+print('CUR_DIR',CUR_DIR)
 
 #db_path=os.path.join(CUR_DIR,'..','cache','1836.db')#这100个序列文件还没有进行__标示化
 #db_path=os.path.join(CUR_DIR,'..','bignews.db')
@@ -111,7 +111,7 @@ def country():
 @app.route('/JSON')    
 def getJSON():
     params=request.args
-    print request.args
+    print (request.args)
     if not(params.has_key('file_name') and params.has_key('func_name')):
         return 'Error'
     else:
@@ -127,7 +127,7 @@ def getJSON():
         if params.has_key('country_id']):
             kwarg['country_id']=params['country_id']
         '''
-        print kwarg
+        print(kwarg)
         chart_backend.render(file_name,**kwarg)
         f=open('webui/tmp/'+file_name,'r')
         s=f.read()

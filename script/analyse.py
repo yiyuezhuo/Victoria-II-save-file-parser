@@ -6,7 +6,7 @@ Created on Fri Jan 29 16:49:09 2016
 """
 import os
 import re
-from select2 import parse
+from .select2 import parse
 #from collections import defaultdict
 import numpy as np
 import matplotlib.pylab as plt
@@ -29,7 +29,7 @@ def test(al):
     size_seq=[]
     for a in al:
         rd=parse(a['path'])
-        print 'load '+a['path']+' succ'
+        print('load '+a['path']+' succ')
         money_t=0.0
         size_t=0.0
         for pop in rd['pop'].values():
@@ -44,7 +44,7 @@ def extract(al,progress=True):
     for a in al:
         rd=parse(a['path'])
         if progress:
-            print 'load '+a['path']+' succ'
+            print('load '+a['path']+' succ')
         main_keys=['type','religion']
         wait_keys=['size','money']
         weight_keys=['literacy']
@@ -55,7 +55,8 @@ def extract(al,progress=True):
         for pop in rd['pop'].values():
             for mk in main_keys:
                 tk=pop[mk]
-                if not(record['sum'][mk].has_key(tk)):
+                #if not(record['sum'][mk].has_key(tk)):
+                if not tk in record['sum'][mk]:
                     record['sum'][mk][tk]={k:0.0 for k in wait_keys+weight_keys}
                 for wk in wait_keys:
                     record['sum'][mk][tk][wk]+=float(pop[wk])
@@ -63,12 +64,12 @@ def extract(al,progress=True):
                     record['sum'][mk][tk][wk]+=float(pop[wk])*float(pop['size'])
                     #record['sum'][mk][wk]+=float(pop[wk])
                 record['main_number'][mk][tk]=record['main_number'][mk].get(tk,0)+1
-        sur_l=record['sum']['type'].values()
+        sur_l=list(record['sum']['type'].values())
         record['sum']['sum']={sk:sum([sd[sk] for sd in sur_l]) for sk in sur_l[0].keys()}
         record['date']=a['date']
         seq.append(record)
         if progress:
-            print 'deal '+a['path']+' succ'
+            print('deal '+a['path']+' succ')
     return seq
     
 def T(seq,main_key,sub_key,key):
@@ -86,12 +87,12 @@ def report_p(seq,main_key,key1,key2):
     sub_keys=seq[0]['sum'][main_key].keys()
     axis=[int(record['date'][0]) for record in seq]
     for sk in sub_keys:
-        print 'plot '+main_key +' '+sk+' '+key1+'/'+key2
+        print('plot '+main_key +' '+sk+' '+key1+'/'+key2)
         l1=np.array(T(seq,main_key,sk,key1))
         l2=np.array(T(seq,main_key,sk,key2))
         plt.plot(axis,l1/l2)
         plt.show()
-        print ' '
+        print(' ')
 def percent_flow(seq,main_key,detail=None,loc=2):
     sub_keys=seq[0]['sum'][main_key].keys()
     d={sk:T(seq,main_key,sk,'size') for sk in sub_keys}
